@@ -8,15 +8,17 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 
 public class MainActivity extends Activity {
-	private void open(String url) {
+	private void open(String url, boolean video) {
 		TextView label = new TextView(this);
 		label.setText("Open sView with:\n" + url);
 		setContentView(label);
 
 		Intent sendIntent = new Intent(Intent.ACTION_SEND);
-		sendIntent.setClassName("com.sview", "com.sview.StMovieActivity");
+		sendIntent.setClassName("com.sview", video ? "com.sview.StMovieActivity" : "com.sview.StImageActivity");
 		sendIntent.setData(Uri.parse(url)); 
 		startActivity(sendIntent);
 	}
@@ -25,19 +27,39 @@ public class MainActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		final String url;
+		String source;
 		if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
-			open(getIntent().getStringExtra(Intent.EXTRA_TEXT));
+			url = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+			source = "Shared URL";
 		} else {
-			Button button = new Button(this);
-			button.setText("Open from clipboard");
-			button.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					ClipboardManager clip = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-					open(clip.getPrimaryClip().getItemAt(0).coerceToText(getApplicationContext()).toString());
-				}
-			});
-			setContentView(button);
+			ClipboardManager clip = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+			url = clip.getPrimaryClip().getItemAt(0).coerceToText(getApplicationContext()).toString();
+			source = "Clipboard";
 		}
 
+		LinearLayout l = new LinearLayout(this);
+		l.setOrientation(LinearLayout.VERTICAL);
+		setContentView(l);
+
+		Button buttonImage = new Button(this);
+		buttonImage.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, 0.5f));
+		buttonImage.setText(source + "\n↓\nsView Image");
+		buttonImage.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				open(url, false);
+			}
+		});
+		l.addView(buttonImage);
+
+		Button buttonVideo = new Button(this);
+		buttonVideo.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, 0.5f));
+		buttonVideo.setText(source + "\n↓\nsView Video");
+		buttonVideo.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				open(url, true);
+			}
+		});
+		l.addView(buttonVideo);
 	}
 }
